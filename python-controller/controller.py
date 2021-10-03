@@ -3,7 +3,7 @@ from modules.Media import ModeMedia
 SERIALPORT = None  # None = Auto-detect, to specify a specific serial port, you can set it to something like "/dev/ttyACM0" (Linux) or "COM1" (Windows)
 VID = 0x2341  # USB Vendor ID for a Pro Micro
 PID = 0x8037  # USB Product ID for a Pro Micro
-DEBUG = True  # More output on the command line
+DEBUG = False  # More output on the command line
 
 from processchecks import *  # Functions to check for active processes and windows
 from modes import *  # Definitions of the hotkey functions in different "modes"
