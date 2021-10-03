@@ -1,15 +1,10 @@
-from modes.Blender import ModeBlender
-from modes.Fallback import ModeFallback
-from modes.Gimp import ModeGimp
-from modes.OBS import ModeOBS
-from modes.Media import Media, ModeMedia
+from modules.Media import ModeMedia
 
 SERIALPORT = None  # None = Auto-detect, to specify a specific serial port, you can set it to something like "/dev/ttyACM0" (Linux) or "COM1" (Windows)
 VID = 0x2341  # USB Vendor ID for a Pro Micro
 PID = 0x8037  # USB Product ID for a Pro Micro
 DEBUG = True  # More output on the command line
 
-from inkkeys import *  # Inkkeys module
 from processchecks import *  # Functions to check for active processes and windows
 from modes import *  # Definitions of the hotkey functions in different "modes"
 from mqtt import \
@@ -37,12 +32,14 @@ print('I will try to stay connected. Press Ctrl+c to quit.')
 
 mqtt = InkkeysMqtt(None, DEBUG)  # Set address to "None" if you do not want to use mqtt
 
-modes = [ \
-    {"mode": ModeMedia(), "process": ".*"}, \
-    {"mode": ModeBlender(), "activeWindow": re.compile("^Blender")}, \
-    {"mode": ModeGimp(), "activeWindow": re.compile("^gimp.*")}, \
-    {"mode": ModeFallback(mqtt)} \
-    ]
+modes = [
+    # \
+    {"mode": ModeMedia(), "process": ".*"}
+    # , \
+    # {"mode": ModeBlender(), "activeWindow": re.compile("^Blender")}, \
+    # {"mode": ModeGimp(), "activeWindow": re.compile("^gimp.*")}, \
+    # {"mode": ModeFallback(mqtt)} \
+]
 
 
 ############################################################################################################
@@ -56,11 +53,14 @@ modes = [ \
 
 def work():
     mode = None  # Current mode of the device (i.e. key mappings for specific process).
+    mode = modes[0]['mode']
+    mode.activate(device)
+    mode.animate(device)
     pollInterval = 0  # Polling interval as requested by the module when the last call to "poll" was made
     lastPoll = 0  # Keeps track of the last time the poll function of the mode instance was called
     lastProcessList = 0  # Keeps track of the last time the list of processes was retrieved
     lastModeCheck = 0  # Keeps track of the last time the current window was checked and a decision about the mode was made
-    mqtt.connect()  # Connect to the MQTT server (if used)
+    #mqtt.connect()  # Connect to the MQTT server (if used)
     try:
         while True:  # Now we are in our main, infinite loop -------------------
             now = time.time()  # Time of this iteration
