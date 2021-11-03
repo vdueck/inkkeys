@@ -1,4 +1,8 @@
-from modules.Media import ModeMedia
+from modules.Display import DisplayManager
+from modules.Media import Media
+from modules.Mediator import ConcreteMediator
+from modules.ModeManagement import ModeManagement
+from modules.Starter import Starter
 
 SERIALPORT = None  # None = Auto-detect, to specify a specific serial port, you can set it to something like "/dev/ttyACM0" (Linux) or "COM1" (Windows)
 VID = 0x2341  # USB Vendor ID for a Pro Micro
@@ -33,8 +37,11 @@ print('I will try to stay connected. Press Ctrl+c to quit.')
 mqtt = InkkeysMqtt(None, DEBUG)  # Set address to "None" if you do not want to use mqtt
 
 modes = [
+    Media(), Starter()
     # \
-    {"mode": ModeMedia(), "process": ".*"}
+    # {"mode": ModeManagement(), "process": ".*"},
+    # {"mode": Media(), "process": ".*"},
+    # {"mode": Starter(), "process": ".*"}
     # , \
     # {"mode": ModeBlender(), "activeWindow": re.compile("^Blender")}, \
     # {"mode": ModeGimp(), "activeWindow": re.compile("^gimp.*")}, \
@@ -53,50 +60,53 @@ modes = [
 
 def work():
     mode = None  # Current mode of the device (i.e. key mappings for specific process).
-    mode = modes[0]['mode']
-    mode.activate(device)
-    mode.animate(device)
+    # mode = modes[0]['mode']
+    manager = ModeManagement()
+    display_manager = DisplayManager()
+    display_manager.set_device(device)
+    mediator = ConcreteMediator(manager, modes, display_manager)
+    manager.set_modes(modes)
+    manager.activate(device)
+    # manager.animate(device)
+
     pollInterval = 0  # Polling interval as requested by the module when the last call to "poll" was made
     lastPoll = 0  # Keeps track of the last time the poll function of the mode instance was called
     lastProcessList = 0  # Keeps track of the last time the list of processes was retrieved
     lastModeCheck = 0  # Keeps track of the last time the current window was checked and a decision about the mode was made
-    #mqtt.connect()  # Connect to the MQTT server (if used)
+    # # mqtt.connect()  # Connect to the MQTT server (if used)
     try:
         while True:  # Now we are in our main, infinite loop -------------------
             now = time.time()  # Time of this iteration
-
             if now - lastProcessList > 5.0:  # Only check the process list every 5 seconds.
                 processes = getActiveProcesses()  # This is a surprisingly expensive and slow call, so don't overdo as it might prevent smooth LED animation (fixable by implementing a second thread) and burn more CPU resources than you might want from a background process
                 lastProcessList = now
-
-            if now - lastModeCheck > 0.5:  # Check active window and decide which mode to use. This can be done more regularly, but since the e-ink screen takes a moment to update, it does not make sense to check more frequently
-                window = getActiveWindow()  # Get the currently active window
-                if window != None:  # Sometime getting the active window fails, then ignore it. (Some window managers allow having no window in focus)
-                    activeWindow = window
-                    if DEBUG:  # Enable DEBUG to see the actual name of the current window if you need it to match your modules
-                        print("Active window: " + str(activeWindow))
-
-                for i in modes:  # Iterate over modes and use the first one that matches
-                    if ("process" in i and i["process"] in processes) or (
-                            "activeWindow" in i and i["activeWindow"].match(activeWindow)) or not (
-                            "process" in i or "activeWindow" in i):
-                        # Either the process for this mode is running or the active window matches the regular expression. This is the mode we will set now.
-                        if i["mode"] != mode:  # Do not set the mode again if we already have this one
-                            if mode != None:
-                                mode.deactivate(device)  # If there was a previous mode, call its deactivate function
-                            mode = i["mode"]  # Set new mode
-                            mode.activate(device)  # ...and call its activate function
-                            pollInterval = 0  # Reset the poll intervall to call mode.poll() at least once (see below)
-                        break
-                lastModeCheck = now
-
-            if pollInterval >= 0 and now - lastPoll > pollInterval:  # Regularly call the poll function of the mode if it requires regular polling
-                # The poll function returns the desired interval when it should be called next - or False if polling is not required in this mode
-                pollInterval = mode.poll(device)
-                lastPoll = now
+            # if now - lastModeCheck > 0.5:  # Check active window and decide which mode to use. This can be done more regularly, but since the e-ink screen takes a moment to update, it does not make sense to check more frequently
+            # window = getActiveWindow()  # Get the currently active window
+            #     if window != None:  # Sometime getting the active window fails, then ignore it. (Some window managers allow having no window in focus)
+            #         activeWindow = window
+            #         if DEBUG:  # Enable DEBUG to see the actual name of the current window if you need it to match your modules
+            #             print("Active window: " + str(activeWindow))
+            #
+            #     for i in modes:  # Iterate over modes and use the first one that matches
+            #         if ("process" in i and i["process"] in processes) or (
+            #                 "activeWindow" in i and i["activeWindow"].match(activeWindow)) or not (
+            #                 "process" in i or "activeWindow" in i):
+            #             # Either the process for this mode is running or the active window matches the regular expression. This is the mode we will set now.
+            #             if i["mode"] != mode:  # Do not set the mode again if we already have this one
+            #                 if mode != None:
+            #                     mode.deactivate(device)  # If there was a previous mode, call its deactivate function
+            #                 mode = i["mode"]  # Set new mode
+            #                 mode.activate(device)  # ...and call its activate function
+            #                 pollInterval = 0  # Reset the poll intervall to call mode.poll() at least once (see below)
+            #             break
+            #     lastModeCheck = now
+            # if pollInterval >= 0 and now - lastPoll > pollInterval:  # Regularly call the poll function of the mode if it requires regular polling
+            #     # The poll function returns the desired interval when it should be called next - or False if polling is not required in this mode
+            #     pollInterval = mode.poll(device)
+            #     lastPoll = now
 
             # Now for the functions that need to be called very often and fast:
-            mode.animate(device)  # Used for LED animations
+            # mode.animate(device)  # Used for LED animations
             device.poll()  # Required for the callbacks that are associated with key presses reported via serial
 
             # If the actions so far did take less than 1/30 seconds, sleep until 1/30s have passed as there is no need to exceed 30fps
@@ -107,7 +117,7 @@ def work():
 
 
     except KeyboardInterrupt:  # User pressed Ctrl+c
-        mqtt.disconnect()
+        #     mqtt.disconnect()
         print('Disconnected from device. Hit Ctrl+c again to quit before reconnect.')
 
 
@@ -126,6 +136,7 @@ def tryUsingPort(port):
         # Something entirely unexpected happened. We will catch it nevertheless, so the device keeps working as this process will probably run in the background unsupervised. But we need to print a proper stacktrace, so we can debug the problem.
         if DEBUG:
             print(traceback.format_exc())
+        print(traceback.format_exc())
         print("Error: ", sys.exc_info()[0])
     return False
 
