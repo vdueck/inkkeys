@@ -30,7 +30,8 @@ long rotaryPosition = 0;  //Last position to keep track of changes
 GxEPD2_290_T94_V2 display(/*CS=*/ PIN_CS, /*DC=*/ PIN_DC, /*RST=*/ PIN_RST, /*BUSY=*/ PIN_BUSY);
 
 void initDisplay() {
-  display.init(0, true, 2, false);
+  //display.init(0, true, 2, false);
+  display.init(115200, true, 3, false);
   display.writeScreenBuffer();
   display.refresh();
   display.writeScreenBufferAgain();
