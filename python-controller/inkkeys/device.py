@@ -2,6 +2,9 @@ from .protocol import *
 import serial
 import time
 from threading import Lock
+from serial import SerialException  # Serial functions
+
+CHUNK_SIZE = 100
 
 
 class Device:
@@ -30,7 +33,7 @@ class Device:
 
     def connect(self, dev):
         print("Connecting to ", dev, ".")
-        self.ser = serial.Serial(dev, 115200, timeout=1)
+        self.ser = serial.Serial(dev, 115200, timeout=1, write_timeout=1)
         if not self.requestInfo(3):
             self.disconnect()
             return False
@@ -46,6 +49,10 @@ class Device:
             self.ser.close()
             self.ser = None
 
+    # Blanks out the display
+    def resetDisplay(self):
+        self.sendToDevice('R r')
+
     def sendToDevice(self, command):
         if self.debug:
             print("Sending: " + command)
@@ -54,11 +61,26 @@ class Device:
     def sendBinaryToDevice(self, data):
         if self.debug:
             print("Sending " + str(len(data)) + " bytes of binary data.")
-        self.ser.write(data)
+        try:
+            # Send binary data in chunks to prevent killing the serial connection
+            start = time.time()
+            endIx = CHUNK_SIZE
+            startIx = 0
+            while (startIx < len(data)):
+                self.ser.write(data[startIx:endIx])
+                # if self.debug:
+                #    print(data[startIx:endIx].hex())
+                startIx = startIx + CHUNK_SIZE
+                endIx = endIx + CHUNK_SIZE
+            if self.debug:
+                print("Data sent.")
+        except SerialException as e:
+            print("Serial error: ", e)
 
     def readFromDevice(self):
         if self.ser.in_waiting > 0:
-            self.inbuffer += self.ser.read(self.ser.in_waiting).decode().replace("\r", "")
+            #self.inbuffer += self.ser.read(self.ser.in_waiting).decode().replace("\r", "")
+            self.inbuffer += self.ser.read(self.ser.in_waiting).decode("ISO-8859-16").replace("\r", "")
         chunks = self.inbuffer.split("\n", 1)
         if len(chunks) > 1:
             cmd = chunks[0]

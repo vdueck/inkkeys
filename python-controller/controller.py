@@ -1,13 +1,15 @@
-from modules.Display import DisplayManager
+from modules.DisplayManager import DisplayManager
 from modules.Media import Media
 from modules.Mediator import ConcreteMediator
 from modules.ModeManagement import ModeManagement
 from modules.Starter import Starter
+from modules.InitPage import InitPage
+from modules.Test import Test
 
 SERIALPORT = None  # None = Auto-detect, to specify a specific serial port, you can set it to something like "/dev/ttyACM0" (Linux) or "COM1" (Windows)
 VID = 0x2341  # USB Vendor ID for a Pro Micro
 PID = 0x8037  # USB Product ID for a Pro Micro
-DEBUG = False  # More output on the command line
+DEBUG = True  # More output on the command line
 
 from processchecks import *  # Functions to check for active processes and windows
 from modes import *  # Definitions of the hotkey functions in different "modes"
@@ -36,17 +38,12 @@ print('I will try to stay connected. Press Ctrl+c to quit.')
 
 mqtt = InkkeysMqtt(None, DEBUG)  # Set address to "None" if you do not want to use mqtt
 
-modes = [
-    Media(), Starter()
-    # \
-    # {"mode": ModeManagement(), "process": ".*"},
-    # {"mode": Media(), "process": ".*"},
-    # {"mode": Starter(), "process": ".*"}
-    # , \
-    # {"mode": ModeBlender(), "activeWindow": re.compile("^Blender")}, \
-    # {"mode": ModeGimp(), "activeWindow": re.compile("^gimp.*")}, \
-    # {"mode": ModeFallback(mqtt)} \
-]
+modes = {
+    InitPage.Title: InitPage(),
+    Media.Title: Media(),
+    Starter.Title: Starter(),
+    Test.Title: Test()
+}
 
 
 ############################################################################################################
@@ -61,13 +58,12 @@ modes = [
 def work():
     mode = None  # Current mode of the device (i.e. key mappings for specific process).
     # mode = modes[0]['mode']
-    manager = ModeManagement()
+    # manager = ModeManagement()
+    init = InitPage()
     display_manager = DisplayManager()
     display_manager.set_device(device)
-    mediator = ConcreteMediator(manager, modes, display_manager)
-    manager.set_modes(modes)
-    manager.activate(device)
-    # manager.animate(device)
+    mediator = ConcreteMediator(init, modes, display_manager)
+    init.activate(device)
 
     pollInterval = 0  # Polling interval as requested by the module when the last call to "poll" was made
     lastPoll = 0  # Keeps track of the last time the poll function of the mode instance was called
@@ -127,6 +123,7 @@ def work():
 def tryUsingPort(port):
     try:
         if device.connect(port):
+            device.resetDisplay()
             work()  # Success, enter main loop
             device.disconnect()
             return True

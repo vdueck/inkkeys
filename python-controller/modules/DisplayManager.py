@@ -1,20 +1,42 @@
-from datetime import time
+import time
 from PIL import Image, ImageDraw, ImageOps, ImageFont
-
+from enum import Enum
 from inkkeys import Device, CommandCode, RefreshTypeCode
 
 
+class CommandType(Enum):
+    Default = 0
+    Text = 1
+    Icon = 2
+
+
 class DisplayUpdateCommand:
-    icon = ""
+    command_type = CommandType.Default
     position = ""
-    text = ""
+    value = ""
+    full_refresh = False
+    inverted = False
+    update_display = False
+
+    def __init__(self, command_type=CommandType.Default,
+                 position="",
+                 value="",
+                 full_refresh=False,
+                 inverted=False,
+                 update_display=False):
+        self.command_type = command_type
+        self.position = position
+        self.value = value
+        self.full_refresh = full_refresh
+        self.inverted = inverted
+        self.update_display = update_display
 
 
 class DisplayManager:
     device: Device = None
 
     def set_device(self, device):
-        device = device
+        self.device = device
 
     imageBuffer = []
     bannerHeight = 12  # Defines the height of top and bottom banner
@@ -34,47 +56,50 @@ class DisplayManager:
             y = part["y"]
             w, h = image.size
             data = image.convert("1").rotate(180).tobytes()
-            self.sendToDevice(CommandCode.DISPLAY.value + " " + str(x) + " " + str(y) + " " + str(w) + " " + str(h))
-            self.sendBinaryToDevice(data)
+            self.device.sendToDevice(
+                CommandCode.DISPLAY.value + " " + str(x) + " " + str(y) + " " + str(w) + " " + str(h))
+            self.device.sendBinaryToDevice(data)
         self.device.imageBuffer = []
 
     def updateDisplay(self, fullRefresh=False, timeout=5):
         with self.device.awaitingResponseLock:
             start = time.time()
-            self.sendToDevice(CommandCode.REFRESH.value + " " + (
+            self.device.sendToDevice(CommandCode.REFRESH.value + " " + (
                 RefreshTypeCode.FULL.value if fullRefresh else RefreshTypeCode.PARTIAL.value))
-            line = self.readFromDevice()
+            line = self.device.readFromDevice()
             while line != "ok":
                 if time.time() - start > timeout:
                     return False
                 if line == None:
                     time.sleep(0.1)
-                    line = self.readFromDevice()
+                    line = self.device.readFromDevice()
                     continue
-                line = self.readFromDevice()
+                line = self.device.readFromDevice()
             self.resendImageData()
-            self.sendToDevice(CommandCode.REFRESH.value + " " + RefreshTypeCode.OFF.value)
-            line = self.readFromDevice()
+            self.device.sendToDevice(CommandCode.REFRESH.value + " " + RefreshTypeCode.OFF.value)
+            line = self.device.readFromDevice()
             while line != "ok":
                 if time.time() - start > timeout:
                     return False
                 if line == None:
                     time.sleep(0.1)
-                    line = self.readFromDevice()
+                    line = self.device.readFromDevice()
                     continue
-                line = self.readFromDevice()
+                line = self.device.readFromDevice()
 
     def getAreaFor(self, function):
         if function == "title":
-            return (0, self.dispH - self.bannerHeight, self.dispW, self.bannerHeight)
+            return (0, self.device.dispH - self.bannerHeight, self.device.dispW, self.bannerHeight)
         elif function == 1:
-            return (0, 0, self.dispW, self.bannerHeight)
+            return (0, 0, self.device.dispW, self.bannerHeight)
         elif function <= 5:
-            return (self.dispW // 2, (5 - function) * self.dispH // 4 + self.bannerHeight, self.dispW // 2,
-                    self.dispH // 4 - 2 * self.bannerHeight)
+            return (
+                self.device.dispW // 2, (5 - function) * self.device.dispH // 4 + self.bannerHeight,
+                self.device.dispW // 2,
+                self.device.dispH // 4 - 2 * self.bannerHeight)
         else:
-            return (0, (9 - function) * self.dispH // 4 + self.bannerHeight, self.dispW // 2,
-                    self.dispH // 4 - 2 * self.bannerHeight)
+            return (0, (9 - function) * self.device.dispH // 4 + self.bannerHeight, self.device.dispW // 2,
+                    self.device.dispH // 4 - 2 * self.bannerHeight)
 
     def sendImageFor(self, function, image):
         x, y, w, h = self.getAreaFor(function)
@@ -138,9 +163,12 @@ class DisplayManager:
 
         self.sendImage(x, y, img)
 
-    def SetTitle(self, title):
-        self.device.sendTextFor("title", title)
+    def handle_update_command(self, command: DisplayUpdateCommand):
+        if command.command_type is CommandType.Icon:
+            self.sendIconFor(command.position, command.value, inverted=command.inverted)
 
-    def UpdateDisplay(self, command: DisplayUpdateCommand):
-        if command.text == "":
-            self.device.updateDisplay();
+        if command.command_type is CommandType.Text:
+            self.sendTextFor(command.position, command.value, inverted=command.inverted)
+
+        if command.update_display:
+            self.updateDisplay()

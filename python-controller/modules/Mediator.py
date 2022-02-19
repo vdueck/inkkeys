@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC
 
-from modules.Display import DisplayUpdateCommand
+from modules.DisplayManager import DisplayUpdateCommand, DisplayManager
 
 
 class Mediator(ABC):
@@ -19,23 +19,23 @@ class Mediator(ABC):
 
 
 class ConcreteMediator(Mediator):
-    def __init__(self, manager: object, modes: object, display_manager: object) -> None:
-        self._manager = manager
-        self._manager.mediator = self
+    def __init__(self, init: object, modes: object, display_manager: DisplayManager) -> None:
+        self._init = init
+        self._init.mediator = self
         self._display = display_manager
         self._display.mediator = self
         self._modes = modes
         for x in self._modes:
-            x.mediator = self
+            self._modes[x].mediator = self
 
     def notify(self, sender: object, event: str) -> None:
         if event == "Reset":
-            self._manager.activate()
+            self._init.activate()
         else:
-            mode = next((e for e in self._modes if e.Title == event), None)
+            mode = self._modes[event]
             if mode is None:
                 return
-            mode.activate(self._manager.device)
+            mode.activate(self._init.device)
 
     def notify_display(self, sender: object, command: DisplayUpdateCommand) -> None:
-        self._display.update(command)
+        self._display.handle_update_command(command)

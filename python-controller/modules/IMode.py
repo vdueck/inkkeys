@@ -1,8 +1,8 @@
 import os
 
 from inkkeys import Device, KeyCode
-from modules.Display import DisplayUpdateCommand
 from modules.Mediator import Mediator
+from modules.DisplayManager import CommandType, DisplayUpdateCommand
 
 
 class IMode:
@@ -36,6 +36,7 @@ class IMode:
         self.SetupButton6()
         self.SetupButton7()
         self.SetupButton8()
+        self.mediator.notify_display(self, DisplayUpdateCommand(update_display=True))
 
     def ClearButtons(self):
         for keyCode in KeyCode:
@@ -47,6 +48,9 @@ class IMode:
     def StartAppAbsolutePath(self, path_to_app):
         return lambda: self.__StartAppAbsolutePath(path_to_app)
 
+    def ActivateMode(self, mode_name):
+        return lambda: self.__ActivateMode(mode_name)
+
     @staticmethod
     def __StartAppInUsrBin(app_name):
         path = "/usr/bin/" + app_name + " &"
@@ -56,12 +60,6 @@ class IMode:
     def __StartAppAbsolutePath(path):
         os.system(path + " &")
 
-    def ReturnToModeManagement(self):
-        return lambda: self.__ReturnToModeManagment()
-
-    def __ReturnToModeManagement(self):
-        self.device.clearCallbacks()
-        self.mediator.notify(self, "Reset")
-
-    def UpdateDisplay(self, command: DisplayUpdateCommand):
-        self.mediator.notify()
+    def __ActivateMode(self, mode_name):
+        self.mediator.notify(self, mode_name)
+        pass
