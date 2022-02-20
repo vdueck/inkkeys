@@ -35,7 +35,7 @@ class DisplayUpdateCommand:
 class DisplayManager:
     device: Device = None
 
-    def set_device(self, device):
+    def __init__(self, device):
         self.device = device
 
     imageBuffer = []
@@ -61,7 +61,7 @@ class DisplayManager:
             self.device.sendBinaryToDevice(data)
         self.device.imageBuffer = []
 
-    def updateDisplay(self, fullRefresh=False, timeout=5):
+    def updateDisplay(self, fullRefresh=False, timeout=5, bufferData=False):
         with self.device.awaitingResponseLock:
             start = time.time()
             self.device.sendToDevice(CommandCode.REFRESH.value + " " + (
@@ -75,17 +75,34 @@ class DisplayManager:
                     line = self.device.readFromDevice()
                     continue
                 line = self.device.readFromDevice()
-            self.resendImageData()
-            self.device.sendToDevice(CommandCode.REFRESH.value + " " + RefreshTypeCode.OFF.value)
-            line = self.device.readFromDevice()
-            while line != "ok":
-                if time.time() - start > timeout:
-                    return False
-                if line == None:
-                    time.sleep(0.1)
-                    line = self.device.readFromDevice()
-                    continue
-                line = self.device.readFromDevice()
+            #   self.resendImageData()
+            #   self.device.sendToDevice(CommandCode.REFRESH.value + " " + RefreshTypeCode.OFF.value)
+            #   line = self.device.readFromDevice()
+            #   while line != "ok":
+            #       if time.time() - start > timeout:
+            #           return False
+            #       if line == None:
+            #           time.sleep(0.1)
+            #           line = self.device.readFromDevice()
+            #           continue
+            #       line = self.device.readFromDevice()
+
+            # Resend all of the image data from the buffer to buffer in the display
+            if bufferData:
+                self.resendImageData()
+                self.sendToDevice(CommandCode.REFRESH.value + " " + RefreshTypeCode.OFF.value)
+                start = time.time()
+                line = self.readFromDevice()
+                while line != "ok":
+                    if time.time() - start > timeout:
+                        if self.debug:
+                            print("Timed out...")
+                        return False
+                    if line == None:
+                        time.sleep(0.1)
+                        line = self.readFromDevice()
+                        continue
+                    line = self.readFromDevice()
 
     def getAreaFor(self, function):
         if function == "title":
@@ -163,7 +180,11 @@ class DisplayManager:
 
         self.sendImage(x, y, img)
 
-    def handle_update_command(self, command: DisplayUpdateCommand):
+    def reset_display(self):
+        self.device.sendToDevice('R r')
+        self.updateDisplay()
+
+    def handle_command(self, command: DisplayUpdateCommand):
         if command.command_type is CommandType.Icon:
             self.sendIconFor(command.position, command.value, inverted=command.inverted)
 

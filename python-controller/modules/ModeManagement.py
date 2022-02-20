@@ -1,5 +1,5 @@
 from inkkeys import *
-from modules.IMode import IMode
+from interfaces.IMode import IMode
 # title: Media
 # 1.             | 5.
 # 2.             | 6.

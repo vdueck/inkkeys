@@ -1,5 +1,5 @@
 from inkkeys import *
-from modules.IMode import *
+from interfaces.IMode import *
 
 
 def Function():

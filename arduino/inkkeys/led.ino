@@ -48,4 +48,3 @@ void ledGreeting(int steps) {
   leds.clear();
   leds.show();
 }
-

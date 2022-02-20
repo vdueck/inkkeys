@@ -32,6 +32,7 @@ class CommandCode(Enum):
 class RefreshTypeCode(Enum):
     PARTIAL = "p"
     FULL = "f"
+    RESET = "r"
     OFF = "o"
 
 

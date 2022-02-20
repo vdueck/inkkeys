@@ -1,25 +1,26 @@
+from inkkeys import Device
+from modes.ClearPage import ClearPage
 from modules.DisplayManager import DisplayManager
-from modules.Media import Media
+from modes.Media import Media
+from modules.KeyManager import KeyManager
+from modules.LedManager import LedManager
 from modules.Mediator import ConcreteMediator
-from modules.ModeManagement import ModeManagement
-from modules.Starter import Starter
-from modules.InitPage import InitPage
-from modules.Test import Test
+from modes.Starter import Starter
+from modes.InitPage import InitPage
+from modes.Test import Test
 
 SERIALPORT = None  # None = Auto-detect, to specify a specific serial port, you can set it to something like "/dev/ttyACM0" (Linux) or "COM1" (Windows)
 VID = 0x2341  # USB Vendor ID for a Pro Micro
 PID = 0x8037  # USB Product ID for a Pro Micro
 DEBUG = True  # More output on the command line
 
-from processchecks import *  # Functions to check for active processes and windows
-from modes import *  # Definitions of the hotkey functions in different "modes"
-from mqtt import \
+from modules.processchecks import *  # Functions to check for active processes and windows
+from modules.mqtt import \
     InkkeysMqtt  # A small class to encapsule MQTT specific functions. You will need to adapt this to your needs if you want to use this.
 
 import time  # Time functions
 from serial import SerialException  # Serial functions
 import serial.tools.list_ports  # Function to iterate over serial ports
-import re  # Regular expressions process name matching
 import traceback  # Print tracebacks if an error is thrown and caught
 
 print("https://there.oughta.be/a/macro-keyboard")
@@ -39,6 +40,7 @@ print('I will try to stay connected. Press Ctrl+c to quit.')
 mqtt = InkkeysMqtt(None, DEBUG)  # Set address to "None" if you do not want to use mqtt
 
 modes = {
+    ClearPage.Title: ClearPage(),
     InitPage.Title: InitPage(),
     Media.Title: Media(),
     Starter.Title: Starter(),
@@ -59,11 +61,12 @@ def work():
     mode = None  # Current mode of the device (i.e. key mappings for specific process).
     # mode = modes[0]['mode']
     # manager = ModeManagement()
-    init = InitPage()
-    display_manager = DisplayManager()
-    display_manager.set_device(device)
-    mediator = ConcreteMediator(init, modes, display_manager)
-    init.activate(device)
+    display_manager = DisplayManager(device)
+    key_manager = KeyManager(device)
+    led_manager = LedManager(device)
+    mediator = ConcreteMediator(modes, display_manager, key_manager, led_manager)
+    #mediator.clear()
+    mediator.init()
 
     pollInterval = 0  # Polling interval as requested by the module when the last call to "poll" was made
     lastPoll = 0  # Keeps track of the last time the poll function of the mode instance was called

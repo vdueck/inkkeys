@@ -383,7 +383,6 @@ void handleSerialInput() {
           expectingImageData--;
           if (serialBufferCount * 8 >= imageDataTargetWidth) {
             display.writeImage(serialBuffer, imageDataTargetX, imageDataCurrentY, imageDataTargetWidth, 1, false, false, false);
-            display.writeImageAgain(serialBuffer, imageDataTargetX, imageDataCurrentY, imageDataTargetWidth, 1, false, false, false);
             serialBufferCount = 0;
             imageDataCurrentY++;
           }
