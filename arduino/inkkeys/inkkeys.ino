@@ -1,10 +1,10 @@
 /*
- * E-Ink adaptive macro keyboard
- * See https://there.oughta.be/a/macro-keyboard
- * 
- * This is the main code which acts as a HID keyboard while
- * allowing to be controlled through a serial interface.
- */
+   E-Ink adaptive macro keyboard
+   See https://there.oughta.be/a/macro-keyboard
+
+   This is the main code which acts as a HID keyboard while
+   allowing to be controlled through a serial interface.
+*/
 
 #include "settings.h"           //Customize your settings in settings.h!
 
@@ -30,7 +30,8 @@ long rotaryPosition = 0;  //Last position to keep track of changes
 GxEPD2_290_T94_V2 display(/*CS=*/ PIN_CS, /*DC=*/ PIN_DC, /*RST=*/ PIN_RST, /*BUSY=*/ PIN_BUSY);
 
 void initDisplay() {
-  display.init(0, true, 2, false);
+  //display.init(0, true, 2, false);
+  display.init(115200, true, 3, false);
   display.writeScreenBuffer();
   display.refresh();
   display.writeScreenBufferAgain();
@@ -41,14 +42,14 @@ void setup() {
   initLEDs();
   //Initialize LEDs first, for some reason they initialize blue
   //  after a power cycle which is pretty annoying.
-  
+
   Serial.begin(115200);
 
   defaultAssignment();
 
   //Greeting on serial
   Serial.println("= InkKeys =");
-  
+
   //Set pin modes for keys
   for (int i = 0; i < nSW; i++) {
     pinMode(SW[i], INPUT_PULLUP);
@@ -99,14 +100,14 @@ void checkKeysAndReportChanges() {
     if (state == LOW && !pressed[i]) {
       if (debounce(i)) {
         pressed[i] = true;
-        Serial.print(i+1);
+        Serial.print(i + 1);
         Serial.println("p");
         executeEvents(assignments[i][0]);
       }
     } else if (state == HIGH && pressed[i]) {
       if (debounce(i)) {
         pressed[i] = false;
-        Serial.print(i+1);
+        Serial.print(i + 1);
         Serial.println("r");
         executeEvents(assignments[i][1]);
       }
@@ -118,10 +119,10 @@ void checkKeysAndReportChanges() {
 void checkRotaryEncoderAndReportChanges() {
   long rotaryNew = rotary.read();
   if (abs(rotaryNew - rotaryPosition) >= ROT_FACTOR) {
-    int report = (rotaryNew-rotaryPosition)/ROT_FACTOR;
+    int report = (rotaryNew - rotaryPosition) / ROT_FACTOR;
     Serial.print("R");
     Serial.println(report);
-    rotaryPosition += report*ROT_FACTOR;
+    rotaryPosition += report * ROT_FACTOR;
     for (int i = 0; i < report; i++)
       executeEvents(assignments[9][0]);
     for (int i = 0; i < -report; i++)

@@ -1,15 +1,25 @@
 from enum import Enum
 from PIL import Image
 
+
 def event(device, keycode, value=""):
     if device == DELAY:
-        return device + str(keycode)
+        result = device + str(keycode)
+        print(result)
+        return result
     elif type(value) == int:
-        return device.value + str(keycode.value) + "i" + str(value)
+        result = device.value + str(keycode.value) + "i" + str(value)
+        print(result)
+        return result
     elif type(value) == ActionCode:
-        return device.value + str(keycode.value) + value.value
+        result = device.value + str(keycode.value) + value.value
+        print(result)
+        return result
     else:
-        return device.value + str(keycode.value)
+        result = device.value + str(keycode.value)
+        print(result)
+        return result
+
 
 class CommandCode(Enum):
     ASSIGN = "A"
@@ -18,16 +28,19 @@ class CommandCode(Enum):
     REFRESH = "R"
     INFO = "I"
 
+
 class RefreshTypeCode(Enum):
     PARTIAL = "p"
     FULL = "f"
+    RESET = "r"
     OFF = "o"
-    
+
+
 class KeyCode(Enum):
     JOG_PRESS = "1p"
     JOG_RELEASE = "1r"
-    SW1_PRESS = "1p"   #Alias
-    SW1_RELEASE = "1r" #Alias
+    SW1_PRESS = "1p"  # Alias
+    SW1_RELEASE = "1r"  # Alias
     SW2_PRESS = "2p"
     SW2_RELEASE = "2r"
     SW3_PRESS = "3p"
@@ -46,22 +59,26 @@ class KeyCode(Enum):
     SW9_RELEASE = "9r"
     JOG_CW = "R+"
     JOG_CCW = "R-"
-    JOG = "R" # Only for callbacks!
+    JOG = "R"  # Only for callbacks!
+
 
 class ActionCode(Enum):
     PRESS = "p"
     RELEASE = "r"
     INCREMENT = "i"
 
+
 class DeviceCode(Enum):
     CONSUMER = "c"
     KEYBOARD = "k"
     MOUSE = "m"
 
-#DelayCode
+
+# DelayCode
 DELAY = "d"
 
-#Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/HID-APIs/ConsumerAPI.h
+
+# Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/HID-APIs/ConsumerAPI.h
 class ConsumerKeycode(Enum):
     CONSUMER_POWER = 0x30
     CONSUMER_SLEEP = 0x32
@@ -93,7 +110,8 @@ class ConsumerKeycode(Enum):
     CONSUMER_BROWSER_FORWARD = 0x225
     CONSUMER_BROWSER_REFRESH = 0x227
     CONSUMER_BROWSER_BOOKMARKS = 0x22A
-    #Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/KeyboardLayouts/ImprovedKeylayoutsUS.h
+    # Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/KeyboardLayouts/ImprovedKeylayoutsUS.h
+
 
 class KeyboardKeycode(Enum):
     KEY_RESERVED = 0
@@ -325,7 +343,8 @@ class KeyboardKeycode(Enum):
     KEY_RIGHT_ALT = 0xE6
     KEY_RIGHT_GUI = 0xE7
     KEY_RIGHT_WINDOWS = 0xE7
-    #Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/HID-APIs/MouseAPI.h
+    # Converted from HID-project: https://github.com/NicoHood/HID/blob/master/src/HID-APIs/MouseAPI.h
+
 
 class MouseKeycode(Enum):
     MOUSE_LEFT = 1
@@ -334,10 +353,8 @@ class MouseKeycode(Enum):
     MOUSE_PREV = 8
     MOUSE_NEXT = 16
 
+
 class MouseAxisCode(Enum):
     MOUSE_X = "x"
     MOUSE_Y = "y"
     MOUSE_WHEEL = "w"
-
-
-

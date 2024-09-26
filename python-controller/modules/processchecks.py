@@ -8,8 +8,6 @@ if sys.platform in ['linux', 'linux2']:
     root = display.screen().root
 elif sys.platform in ['Windows', 'win32', 'cygwin']:
     import win32gui
-elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
-    from AppKit import NSWorkspace
 else:
     print("Unknown platform: " + sys.platform)
 
@@ -28,8 +26,6 @@ def getActiveWindow():
         elif sys.platform in ['Windows', 'win32', 'cygwin']:
             window = win32gui.GetForegroundWindow()
             active_window_name = win32gui.GetWindowText(window)
-        elif sys.platform in ['Mac', 'darwin', 'os2', 'os2emx']:
-            active_window_name = (NSWorkspace.sharedWorkspace().activeApplication()['NSApplicationName'])
     except:
         print("Could not get active window: ", sys.exc_info()[0])
     return active_window_name
